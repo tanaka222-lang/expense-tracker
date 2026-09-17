@@ -1,0 +1,148 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #1f2933;
+    background-color: #f4f5f7;
+}
+
+h1,
+h2,
+h3 {
+    line-height: 1.2;
+}
+
+.site-header {
+    padding: 1.5rem 1rem;
+    background-color: #1f2933;
+    border-bottom: 4px solid #2e9e5b;
+    text-align: center;
+}
+
+.site-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: #ffffff;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background-color: #ffffff;
+    border-radius: 8px;
+}
+
+.section h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+}
+
+.form label {
+    display: block;
+    margin-top: 0.75rem;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.form input,
+.form select {
+    width: 100%;
+    padding: 0.5rem;
+    font: inherit;
+    border: 1px solid #c3c8cf;
+    border-radius: 4px;
+}
+
+.form input:focus,
+.form select:focus {
+    border-color: #2e9e5b;
+    outline: none;
+}
+
+.btn {
+    margin-top: 1rem;
+    padding: 0.6rem 1.5rem;
+    font: inherit;
+    color: #ffffff;
+    background-color: #2e9e5b;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #237a46;
+}
+
+.operation {
+    padding: 10px;
+    border-bottom: 1px solid #dde1e6;
+}
+
+.operation:last-child {
+    border-bottom: none;
+}
+
+.operation h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1.1rem;
+}
+
+.operation p {
+    margin: 0;
+}
+
+.operation__date {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.amount--income {
+    color: #2e9e5b;
+}
+
+.amount--expense {
+    color: #d64545;
+}
+
+.balance {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: #e8f5ec;
+    border: 1px solid #2e9e5b;
+    border-radius: 8px;
+}
+
+.balance h2 {
+    margin-top: 0;
+}
+
+.balance p {
+    margin: 0.25rem 0;
+}
+
+.balance__total {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.site-footer {
+    padding: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-align: center;
+    border-top: 1px solid #dde1e6;
+}
