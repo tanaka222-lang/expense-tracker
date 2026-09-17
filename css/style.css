@@ -13,47 +13,90 @@ body {
     background-color: #f4f5f7;
 }
 
+img {
+    max-width: 100%;
+    height: auto;
+}
+
 h1,
 h2,
 h3 {
     line-height: 1.2;
 }
 
+/* ---------- Мобільний (базові стилі) ---------- */
+
 .site-header {
-    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
     background-color: #1f2933;
     border-bottom: 4px solid #2e9e5b;
-    text-align: center;
 }
 
 .site-header h1 {
     margin: 0;
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: #ffffff;
 }
 
-.container {
+.nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.nav a {
+    color: #cbd2d9;
+    text-decoration: none;
+}
+
+.nav a:hover {
+    color: #ffffff;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 1fr;
     max-width: 800px;
     margin: 0 auto;
     padding: 0 1rem;
 }
 
 .section {
-    margin: 2rem 0;
-    padding: 1.5rem;
+    margin: 1.5rem 0;
+    padding: 1rem;
     background-color: #ffffff;
     border-radius: 8px;
 }
 
 .section h2 {
     margin-top: 0;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .form label {
-    display: block;
-    margin-top: 0.75rem;
-    margin-bottom: 0.25rem;
     font-weight: 600;
 }
 
@@ -73,7 +116,7 @@ h3 {
 }
 
 .btn {
-    margin-top: 1rem;
+    align-self: flex-start;
     padding: 0.6rem 1.5rem;
     font: inherit;
     color: #ffffff;
@@ -85,6 +128,11 @@ h3 {
 
 .btn:hover {
     background-color: #237a46;
+}
+
+.operations-list {
+    display: grid;
+    grid-template-columns: 1fr;
 }
 
 .operation {
@@ -119,14 +167,11 @@ h3 {
 }
 
 .balance {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+    margin: 0 0 1.5rem;
+    padding: 1rem;
     background-color: #e8f5ec;
     border: 1px solid #2e9e5b;
     border-radius: 8px;
-        width: calc(100% - 2rem);
-    max-width: calc(800px - 2rem);
-    margin: 0 auto 2rem;
 }
 
 .balance h2 {
@@ -148,4 +193,60 @@ h3 {
     color: #6b7280;
     text-align: center;
     border-top: 1px solid #dde1e6;
+}
+
+/* ---------- Планшет ---------- */
+
+@media (min-width: 600px) {
+    .site-header {
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 1.25rem 2rem;
+    }
+
+    .site-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .section {
+        padding: 1.5rem;
+    }
+
+    .form-row {
+        flex-direction: row;
+    }
+
+    .form-row .form-field {
+        flex: 1;
+    }
+}
+
+/* ---------- Десктоп ---------- */
+
+@media (min-width: 1024px) {
+    .site-header h1 {
+        font-size: 2rem;
+    }
+
+    .layout {
+        grid-template-columns: 3fr 1fr;
+        gap: 2rem;
+        align-items: start;
+        max-width: 1200px;
+        padding: 0 2rem;
+    }
+
+    .section {
+        margin: 2rem 0;
+    }
+
+    .balance {
+        position: sticky;
+        top: 1rem;
+        margin: 2rem 0;
+    }
+
+    .balance__total {
+        font-size: 1.75rem;
+    }
 }
