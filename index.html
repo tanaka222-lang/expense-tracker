@@ -10,69 +10,87 @@
 <body>
     <header class="site-header">
         <h1>Трекер витрат</h1>
+        <nav class="nav" aria-label="Розділи сторінки">
+            <a href="#add-operation">Додати</a>
+            <a href="#operations">Операції</a>
+            <a href="#balance">Баланс</a>
+        </nav>
     </header>
 
-    <main class="container">
-        <section id="add-operation" class="section">
-            <h2>Додати операцію</h2>
-            <form class="form">
-                <label for="type">Тип</label>
-                <select id="type" name="type">
-                    <option value="expense">Витрата</option>
-                    <option value="income">Дохід</option>
-                </select>
+    <div class="layout">
+        <main>
+            <section id="add-operation" class="section">
+                <h2>Додати операцію</h2>
+                <form class="form">
+                    <div class="form-field">
+                        <label for="type">Тип</label>
+                        <select id="type" name="type">
+                            <option value="expense">Витрата</option>
+                            <option value="income">Дохід</option>
+                        </select>
+                    </div>
 
-                <label for="amount">Сума, грн</label>
-                <input type="number" id="amount" name="amount" min="0" step="0.01" required>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="amount">Сума, грн</label>
+                            <input type="number" id="amount" name="amount" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="category">Категорія</label>
+                            <select id="category" name="category">
+                                <option>Їжа</option>
+                                <option>Транспорт</option>
+                                <option>Розваги</option>
+                                <option>Стипендія</option>
+                                <option>Інше</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="date">Дата</label>
+                            <input type="date" id="date" name="date" required>
+                        </div>
+                    </div>
 
-                <label for="category">Категорія</label>
-                <select id="category" name="category">
-                    <option>Їжа</option>
-                    <option>Транспорт</option>
-                    <option>Розваги</option>
-                    <option>Стипендія</option>
-                    <option>Інше</option>
-                </select>
+                    <div class="form-field">
+                        <label for="comment">Коментар</label>
+                        <input type="text" id="comment" name="comment">
+                    </div>
 
-                <label for="date">Дата</label>
-                <input type="date" id="date" name="date" required>
+                    <button type="submit" class="btn">Додати</button>
+                </form>
+            </section>
 
-                <label for="comment">Коментар</label>
-                <input type="text" id="comment" name="comment">
+            <section id="operations" class="section">
+                <h2>Операції</h2>
+                <div class="operations-list">
+                    <article class="operation">
+                        <h3><span class="amount amount--expense">−150 грн</span> · Їжа</h3>
+                        <p>Обід у їдальні</p>
+                        <p class="operation__date"><time datetime="2026-09-15">15.09.2026</time></p>
+                    </article>
 
-                <button type="submit" class="btn">Додати</button>
-            </form>
-        </section>
+                    <article class="operation">
+                        <h3><span class="amount amount--expense">−30 грн</span> · Транспорт</h3>
+                        <p>Проїзд у метро</p>
+                        <p class="operation__date"><time datetime="2026-09-16">16.09.2026</time></p>
+                    </article>
 
-        <section id="operations" class="section">
-            <h2>Операції</h2>
+                    <article class="operation">
+                        <h3><span class="amount amount--income">+2000 грн</span> · Стипендія</h3>
+                        <p>Нарахування стипендії</p>
+                        <p class="operation__date"><time datetime="2026-09-17">17.09.2026</time></p>
+                    </article>
+                </div>
+            </section>
+        </main>
 
-            <article class="operation">
-                <h3><span class="amount amount--expense">−150 грн</span> · Їжа</h3>
-                <p>Обід у їдальні</p>
-                <p class="operation__date"><time datetime="2026-09-15">15.09.2026</time></p>
-            </article>
-
-            <article class="operation">
-                <h3><span class="amount amount--expense">−30 грн</span> · Транспорт</h3>
-                <p>Проїзд у метро</p>
-                <p class="operation__date"><time datetime="2026-09-16">16.09.2026</time></p>
-            </article>
-
-            <article class="operation">
-                <h3><span class="amount amount--income">+2000 грн</span> · Стипендія</h3>
-                <p>Нарахування стипендії</p>
-                <p class="operation__date"><time datetime="2026-09-17">17.09.2026</time></p>
-            </article>
-        </section>
-    </main>
-
-    <aside class="balance container">
-        <h2>Баланс</h2>
-        <p>Доходи: <span class="amount amount--income">2000 грн</span></p>
-        <p>Витрати: <span class="amount amount--expense">180 грн</span></p>
-        <p class="balance__total">Залишок: 1820 грн</p>
-    </aside>
+        <aside id="balance" class="balance">
+            <h2>Баланс</h2>
+            <p>Доходи: <span class="amount amount--income">2000 грн</span></p>
+            <p>Витрати: <span class="amount amount--expense">180 грн</span></p>
+            <p class="balance__total">Залишок: 1820 грн</p>
+        </aside>
+    </div>
 
     <footer class="site-footer">
         <p>© 2026 Немировський Тимур, ІП-52</p>
