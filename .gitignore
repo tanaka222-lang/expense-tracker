@@ -1,0 +1,8 @@
+# Редактор
+.vscode/
+.idea/
+
+# Операційна система
+.DS_Store
+Thumbs.db
+desktop.ini
