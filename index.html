@@ -8,20 +8,75 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Розділ 1: Шапка з назвою застосунку -->
-    <div>Трекер витрат</div>
+    <header>
+        <h1>Трекер витрат</h1>
+    </header>
 
-    <!-- Розділ 2: Форма додавання витрати/доходу -->
-    <div>Тут буде форма додавання витрати або доходу</div>
+    <main>
+        <section id="add-operation">
+            <h2>Додати операцію</h2>
+            <form>
+                <label for="type">Тип</label>
+                <select id="type" name="type">
+                    <option value="expense">Витрата</option>
+                    <option value="income">Дохід</option>
+                </select>
 
-    <!-- Розділ 3: Список операцій -->
-    <div>Тут буде список операцій</div>
+                <label for="amount">Сума, грн</label>
+                <input type="number" id="amount" name="amount" min="0" step="0.01" required>
 
-    <!-- Розділ 4: Блок підсумкового балансу -->
-    <div>Тут буде підсумковий баланс</div>
+                <label for="category">Категорія</label>
+                <select id="category" name="category">
+                    <option>Їжа</option>
+                    <option>Транспорт</option>
+                    <option>Розваги</option>
+                    <option>Стипендія</option>
+                    <option>Інше</option>
+                </select>
 
-    <!-- Розділ 5: Підвал -->
-    <div>© 2026 Немировський Тимур, ІП-52</div>
+                <label for="date">Дата</label>
+                <input type="date" id="date" name="date" required>
+
+                <label for="comment">Коментар</label>
+                <input type="text" id="comment" name="comment">
+
+                <button type="submit">Додати</button>
+            </form>
+        </section>
+
+        <section id="operations">
+            <h2>Операції</h2>
+
+            <article>
+                <h3>−150 грн · Їжа</h3>
+                <p>Обід у їдальні</p>
+                <p><time datetime="2026-09-15">15.09.2026</time></p>
+            </article>
+
+            <article>
+                <h3>−30 грн · Транспорт</h3>
+                <p>Проїзд у метро</p>
+                <p><time datetime="2026-09-16">16.09.2026</time></p>
+            </article>
+
+            <article>
+                <h3>+2000 грн · Стипендія</h3>
+                <p>Нарахування стипендії</p>
+                <p><time datetime="2026-09-17">17.09.2026</time></p>
+            </article>
+        </section>
+    </main>
+
+    <aside>
+        <h2>Баланс</h2>
+        <p>Доходи: 2000 грн</p>
+        <p>Витрати: 180 грн</p>
+        <p><strong>Залишок: 1820 грн</strong></p>
+    </aside>
+
+    <footer>
+        <p>© 2026 Немировський Тимур, ІП-52</p>
+    </footer>
 
     <script src="js/app.js"></script>
 </body>
