@@ -138,3 +138,109 @@ form.addEventListener('submit', (event) => {
 removeStaticExamples();
 renderOperations(operations);
 updateSummary(operations);
+// ---------- Практикум 9: дані з зовнішнього API ----------
+
+// мок операцій з відкритого API JSONPlaceholder: name - призначення, body - коментар
+const API_URL = 'https://jsonplaceholder.typicode.com/comments?postId=2';
+const RATES_URL = 'https://api.frankfurter.dev/v1/latest';
+
+const apiList = document.querySelector('#api-list');
+const apiStatus = document.querySelector('#api-status');
+const reloadButton = document.querySelector('#reload-btn');
+const convertButton = document.querySelector('#convert-btn');
+const convResult = document.querySelector('#conv-result');
+
+// малює отримані з сервера записи тим самим способом, що й основний список
+function renderApiOperations(items) {
+    apiList.innerHTML = '';
+
+    for (const item of items) {
+        const li = document.createElement('li');
+        const title = document.createElement('h3');
+        const text = document.createElement('p');
+
+        title.textContent = item.name;
+        text.textContent = item.body;
+
+        li.classList.add('api-item');
+        li.setAttribute('data-id', item.id);
+        li.append(title, text);
+        apiList.append(li);
+    }
+}
+
+// завантажує приклади операцій з API з перевіркою статусу й обробкою помилок
+async function loadApiOperations() {
+    apiStatus.classList.remove('api-status--error');
+    apiStatus.textContent = 'Завантаження…';
+    reloadButton.disabled = true;
+
+    try {
+        const response = await fetch(API_URL);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Отримано з API:', data);
+
+        renderApiOperations(data.slice(0, 5));
+        apiStatus.textContent = `Завантажено записів: ${data.length}, показано перші 5`;
+    } catch (error) {
+        apiList.innerHTML = '';
+        apiStatus.textContent = 'Не вдалося завантажити дані. Перевірте з\'єднання та натисніть «Оновити».';
+        apiStatus.classList.add('api-status--error');
+        console.error('Помилка запиту до API:', error);
+    } finally {
+        reloadButton.disabled = false;
+    }
+}
+
+// конвертує суму через відкритий API Frankfurter
+async function convertAmount() {
+    const amount = Number(document.querySelector('#conv-amount').value);
+    const from = document.querySelector('#conv-from').value;
+    const to = document.querySelector('#conv-to').value;
+
+    convResult.classList.remove('api-status--error');
+
+    if (amount <= 0) {
+        convResult.textContent = 'Введіть суму більшу за 0';
+        convResult.classList.add('api-status--error');
+        return;
+    }
+
+    if (from === to) {
+        convResult.textContent = 'Виберіть різні валюти';
+        convResult.classList.add('api-status--error');
+        return;
+    }
+
+    convResult.textContent = 'Отримуємо курс…';
+    convertButton.disabled = true;
+
+    try {
+        const response = await fetch(`${RATES_URL}?amount=${amount}&from=${from}&to=${to}`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Курс від Frankfurter:', data);
+
+        convResult.textContent = `${amount} ${from} = ${data.rates[to]} ${to} (курс на ${data.date})`;
+    } catch (error) {
+        convResult.textContent = 'Курс тимчасово недоступний, спробуйте пізніше.';
+        convResult.classList.add('api-status--error');
+        console.error('Помилка запиту курсу:', error);
+    } finally {
+        convertButton.disabled = false;
+    }
+}
+
+reloadButton.addEventListener('click', loadApiOperations);
+convertButton.addEventListener('click', convertAmount);
+
+loadApiOperations();
