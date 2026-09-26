@@ -9,15 +9,17 @@ const operations = [
     { amount: 90, type: 'витрата' },
 ];
 
-// виводить у консоль кожну операцію зі знаком + або -
-function printOperations(list) {
-    for (const op of list) {
-        const sign = op.type === 'дохід' ? '+' : '-';
-        console.log(`${sign}${op.amount} грн (${op.type})`);
-    }
+const listContainer = document.querySelector('#transactions-list');
+const balanceElement = document.querySelector('#balance');
+
+// прибирає статичні приклади, які лишились у розмітці з практикуму 2
+function removeStaticExamples() {
+    const examples = document.querySelectorAll('.static-example');
+    examples.forEach((item) => item.remove());
+    console.log(`Видалено статичних елементів: ${examples.length}`);
 }
 
-// рахує окремо доходи і витрати та повертає підсумковий баланс
+// рахує доходи, витрати і підсумковий баланс
 function calcBalance(list) {
     let income = 0;
     let expense = 0;
@@ -33,36 +35,49 @@ function calcBalance(list) {
     return { income, expense, balance: income - expense };
 }
 
-// пише в консоль, додатний баланс чи ні
-function checkBalance(balance) {
-    if (balance > 0) {
-        console.log(`Баланс додатний: ${balance} грн, все гаразд`);
-    } else if (balance === 0) {
-        console.log('Баланс нульовий');
-    } else {
-        console.log(`Баланс від'ємний: ${balance} грн, витрат більше ніж доходів`);
-    }
-}
-
 // переводить частину від загальної суми у відсотки
 const toPercent = (part, total) => Math.round(part / total * 100);
 
-console.log('--- Операції ---');
-printOperations(operations);
+// створює li для кожної операції масиву і додає його в список на сторінці
+function renderOperations(list) {
+    listContainer.innerHTML = '';
 
-const result = calcBalance(operations);
+    for (const op of list) {
+        const item = document.createElement('li');
+        const sign = op.type === 'дохід' ? '+' : '-';
 
-console.log('--- Підсумок ---');
-console.log(`Кількість операцій: ${operations.length}`);
-console.log(`Доходи: ${result.income} грн`);
-console.log(`Витрати: ${result.expense} грн`);
-checkBalance(result.balance);
+        item.textContent = `${sign}${op.amount} грн (${op.type})`;
+        item.classList.add('operation');
+        item.classList.add(op.type === 'дохід' ? 'income' : 'expense');
+        item.setAttribute('data-amount', op.amount);
 
-const spentPercent = toPercent(result.expense, result.income);
-console.log(`Витрачено ${spentPercent}% від доходу`);
+        listContainer.append(item);
+    }
 
-console.log('--- Перевірка інших випадків ---');
-checkBalance(0);
-checkBalance(-120);
-console.log(`toPercent(45, 60) = ${toPercent(45, 60)}`);
-console.log(`typeof result.balance: ${typeof result.balance}`);
+    console.log(`Створено елементів списку: ${listContainer.children.length}`);
+}
+
+// оновлює текст елементів підсумку, які вже є в розмітці
+function updateSummary(list) {
+    const result = calcBalance(list);
+    const spent = toPercent(result.expense, result.income);
+
+    balanceElement.textContent = `${result.balance} грн`;
+    document.querySelector('#income-total').textContent = `+${result.income} грн`;
+    document.querySelector('#expense-total').textContent = `-${result.expense} грн`;
+    document.querySelector('#balance-hint').textContent = `Витрачено ${spent} % доходу`;
+    document.querySelector('#budget-fill').style.width = `${spent}%`;
+
+    const status = document.querySelector('#balance-status');
+    if (result.balance > 0) {
+        status.textContent = '✓ Бюджет у нормі';
+    } else {
+        status.textContent = '! Витрат більше ніж доходів';
+    }
+
+    console.log(`Баланс оновлено: ${result.balance} грн`);
+}
+
+removeStaticExamples();
+renderOperations(operations);
+updateSummary(operations);
