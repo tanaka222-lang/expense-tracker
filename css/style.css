@@ -326,3 +326,45 @@ main {
         gap: 0.5rem;
     }
 }
+.section-hint {
+    margin: -0.5rem 0 1rem;
+    font-size: 0.875rem;
+    color: #475467;
+}
+
+.api-status {
+    margin: 0.75rem 0 0;
+    font-size: 0.875rem;
+    color: #475467;
+}
+
+.api-status--error {
+    font-weight: 600;
+    color: #b42318;
+}
+
+.api-list {
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.api-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.api-item:last-child {
+    border-bottom: none;
+}
+
+.api-item h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+}
+
+.api-item p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #475467;
+}

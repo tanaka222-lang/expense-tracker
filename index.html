@@ -94,6 +94,42 @@
             </section>
         </main>
     </div>
+                <section id="api-operations" class="section">
+                <h2>Приклади операцій із сервера</h2>
+                <p class="section-hint">Дані завантажуються з відкритого API JSONPlaceholder.</p>
+                <button type="button" class="btn" id="reload-btn">Оновити</button>
+                <p class="api-status" id="api-status" role="status"></p>
+                <ul class="api-list" id="api-list"></ul>
+            </section>
+
+            <section id="converter" class="section">
+                <h2>Конвертер валют</h2>
+                <p class="section-hint">Курси надає відкритий API Frankfurter (дані Європейського центрального банку).</p>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="conv-amount">Сума</label>
+                        <input type="number" id="conv-amount" min="0.01" step="0.01" value="100">
+                    </div>
+                    <div class="form-field">
+                        <label for="conv-from">З валюти</label>
+                        <select id="conv-from">
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="PLN">PLN</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="conv-to">У валюту</label>
+                        <select id="conv-to">
+                            <option value="EUR">EUR</option>
+                            <option value="USD">USD</option>
+                            <option value="PLN">PLN</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" class="btn" id="convert-btn">Конвертувати</button>
+                <p class="api-status" id="conv-result" role="status"></p>
+            </section>
 
     <footer class="site-footer">
         <p>© 2026 Немировський Тимур, ІП-52</p>
