@@ -98,11 +98,10 @@ main {
 }
 
 /*
- * Нечітка вимога: «має бути зрозуміло з першого погляду, чи все гаразд із бюджетом».
- * Баланс винесено першим блоком сторінки, щоб користувач бачив його ще до форми й списку.
- * Підсумок — найбільший текст на сторінці (36px), тому око зупиняється на ньому першим.
- * Стан бюджету дублюється трьома каналами: кольором рамки, текстом «Бюджет у нормі» і смугою
- * витраченої частки доходу — так його зрозуміє навіть людина, що погано розрізняє кольори.
+ * Нечітка вимога: "з першого погляду зрозуміло, чи все гаразд із бюджетом".
+ * Баланс поставив першим блоком, щоб його було видно одразу при відкритті сторінки.
+ * Сума залишку найбільша на сторінці, під нею текст статусу і смужка витрат.
+ * Статус показаний не тільки кольором, а й текстом, бо колір не всі розрізняють.
  */
 .balance {
     padding: 1.25rem;
@@ -230,17 +229,16 @@ main {
     background-color: #14532d;
 }
 
+/* ---------- Список операцій (практикум 7: рендер з масиву) ---------- */
+
 .operations-list {
-    display: grid;
-    grid-template-columns: 1fr;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
 .operation {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    column-gap: 1rem;
-    align-items: center;
-    padding: 0.75rem 0.25rem;
+    padding: 0.75rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
@@ -248,20 +246,16 @@ main {
     border-bottom: none;
 }
 
-.operation h3 {
-    margin: 0;
-    font-size: 1rem;
+.operation.income {
+    font-weight: 600;
+    color: #15803d;
+    border-left: 4px solid #15803d;
 }
 
-.operation__comment,
-.operation__date {
-    grid-column: 1 / -1;
-    margin: 0;
-}
-
-.operation__date {
-    font-size: 0.875rem;
-    color: #475467;
+.operation.expense {
+    font-weight: 600;
+    color: #b42318;
+    border-left: 4px solid #b42318;
 }
 
 .amount--income {
@@ -270,39 +264,6 @@ main {
 
 .amount--expense {
     color: #b42318;
-}
-
-.tag {
-    justify-self: end;
-    padding: 0.125rem 0.625rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    border-radius: 999px;
-}
-
-.tag--food {
-    color: #9a3412;
-    background-color: #ffedd5;
-}
-
-.tag--transport {
-    color: #1e40af;
-    background-color: #dbeafe;
-}
-
-.tag--fun {
-    color: #6b21a8;
-    background-color: #f3e8ff;
-}
-
-.tag--income {
-    color: #166534;
-    background-color: #dcfce7;
-}
-
-.tag--other {
-    color: #374151;
-    background-color: #e5e7eb;
 }
 
 .site-footer {

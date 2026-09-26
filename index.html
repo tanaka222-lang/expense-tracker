@@ -9,34 +9,35 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <script src="script.js" defer></script>
 </head>
 <body>
     <header class="site-header">
         <h1>Трекер витрат</h1>
         <nav class="nav" aria-label="Розділи сторінки">
-            <a href="#balance">Баланс</a>
+            <a href="#balance-section">Баланс</a>
             <a href="#add-operation">Додати</a>
             <a href="#operations">Операції</a>
         </nav>
     </header>
 
     <div class="layout">
-        <aside id="balance" class="balance balance--ok">
+        <aside id="balance-section" class="balance balance--ok">
             <h2>Баланс</h2>
-            <p class="balance__total">1820 грн</p>
-            <p class="balance__status">✓ Бюджет у нормі</p>
-            <div class="budget-bar" role="img" aria-label="Витрачено 9% доходу">
-                <div class="budget-bar__fill"></div>
+            <p class="balance__total" id="balance">1820 грн</p>
+            <p class="balance__status" id="balance-status">✓ Бюджет у нормі</p>
+            <div class="budget-bar" role="img" aria-label="Витрачено доходу">
+                <div class="budget-bar__fill" id="budget-fill"></div>
             </div>
-            <p class="balance__hint">Витрачено 9 % доходу</p>
+            <p class="balance__hint" id="balance-hint">Витрачено 9 % доходу</p>
             <dl class="balance__details">
                 <div>
                     <dt>Доходи</dt>
-                    <dd class="amount amount--income">+2000 грн</dd>
+                    <dd class="amount amount--income" id="income-total">+2000 грн</dd>
                 </div>
                 <div>
                     <dt>Витрати</dt>
-                    <dd class="amount amount--expense">−180 грн</dd>
+                    <dd class="amount amount--expense" id="expense-total">-180 грн</dd>
                 </div>
             </dl>
         </aside>
@@ -85,28 +86,11 @@
 
             <section id="operations" class="section">
                 <h2>Операції</h2>
-                <div class="operations-list">
-                    <article class="operation">
-                        <h3><span class="amount amount--expense">−150 грн</span></h3>
-                        <span class="tag tag--food">Їжа</span>
-                        <p class="operation__comment">Обід у їдальні</p>
-                        <p class="operation__date"><time datetime="2026-09-15">15.09.2026</time></p>
-                    </article>
-
-                    <article class="operation">
-                        <h3><span class="amount amount--expense">−30 грн</span></h3>
-                        <span class="tag tag--transport">Транспорт</span>
-                        <p class="operation__comment">Проїзд у метро</p>
-                        <p class="operation__date"><time datetime="2026-09-16">16.09.2026</time></p>
-                    </article>
-
-                    <article class="operation">
-                        <h3><span class="amount amount--income">+2000 грн</span></h3>
-                        <span class="tag tag--income">Стипендія</span>
-                        <p class="operation__comment">Нарахування стипендії</p>
-                        <p class="operation__date"><time datetime="2026-09-17">17.09.2026</time></p>
-                    </article>
-                </div>
+                <ul class="operations-list" id="transactions-list">
+                    <li class="operation static-example">-150 грн (витрата)</li>
+                    <li class="operation static-example">-30 грн (витрата)</li>
+                    <li class="operation static-example">+2000 грн (дохід)</li>
+                </ul>
             </section>
         </main>
     </div>
@@ -114,6 +98,5 @@
     <footer class="site-footer">
         <p>© 2026 Немировський Тимур, ІП-52</p>
     </footer>
-
-   <script src="script.js" defer></script></body>
+</body>
 </html>
