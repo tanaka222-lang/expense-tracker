@@ -142,7 +142,7 @@ updateSummary(operations);
 
 // мок операцій з відкритого API JSONPlaceholder: name - призначення, body - коментар
 const API_URL = 'https://jsonplaceholder.typicode.com/comments?postId=2';
-const RATES_URL = 'https://api.frankfurter.app/latest';
+const RATES_URL = 'https://api.frankfurter.dev/v1/latest';
 
 const apiList = document.querySelector('#api-list');
 const apiStatus = document.querySelector('#api-status');
