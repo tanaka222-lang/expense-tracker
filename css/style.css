@@ -306,11 +306,49 @@ main {
         flex: 1;
     }
 }
+.container {
+    display: grid;
+    gap: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1rem 2rem;
+}
+
+.operation {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.operation__category {
+    margin-right: auto;
+    font-weight: 400;
+    color: #475467;
+}
+
+.operation__remove {
+    padding: 0.25rem 0.625rem;
+    font: inherit;
+    color: #b42318;
+    background-color: #ffffff;
+    border: 1px solid #b42318;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.operation__remove:hover {
+    color: #ffffff;
+    background-color: #b42318;
+}
 
 /* ---------- Десктоп ---------- */
 
 @media (min-width: 1024px) {
     .layout {
+        .container {
+        max-width: 1200px;
+        padding: 0 2rem 2rem;
+    }
         grid-template-columns: 3fr 1fr;
         gap: 2rem;
         align-items: start;

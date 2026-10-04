@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -21,23 +22,24 @@
         </nav>
     </header>
 
-    <div class="layout">
-        <aside id="balance-section" class="balance balance--ok">
+    <!-- Vue-застосунок: баланс, форма і список операцій -->
+    <div class="layout" id="app">
+        <aside id="balance-section" class="balance">
             <h2>Баланс</h2>
-            <p class="balance__total" id="balance">1820 грн</p>
-            <p class="balance__status" id="balance-status">✓ Бюджет у нормі</p>
-            <div class="budget-bar" role="img" aria-label="Витрачено доходу">
-                <div class="budget-bar__fill" id="budget-fill"></div>
+            <p class="balance__total">{{ balance }} грн</p>
+            <p class="balance__status">{{ statusText }}</p>
+            <div class="budget-bar" role="img" :aria-label="'Витрачено ' + spentPercent + '% доходу'">
+                <div class="budget-bar__fill" :style="{ width: spentPercent + '%' }"></div>
             </div>
-            <p class="balance__hint" id="balance-hint">Витрачено 9 % доходу</p>
+            <p class="balance__hint">Витрачено {{ spentPercent }} % доходу</p>
             <dl class="balance__details">
                 <div>
                     <dt>Доходи</dt>
-                    <dd class="amount amount--income" id="income-total">+2000 грн</dd>
+                    <dd class="amount amount--income">+{{ income }} грн</dd>
                 </div>
                 <div>
                     <dt>Витрати</dt>
-                    <dd class="amount amount--expense" id="expense-total">-180 грн</dd>
+                    <dd class="amount amount--expense">-{{ expense }} грн</dd>
                 </div>
             </dl>
         </aside>
@@ -45,11 +47,11 @@
         <main>
             <section id="add-operation" class="section">
                 <h2>Додати операцію</h2>
-                <form class="form" id="operation-form">
+                <form class="form" @submit.prevent="addOperation">
                     <div class="form-row">
                         <div class="form-field">
                             <label for="type">Тип</label>
-                            <select id="type" name="type" required>
+                            <select id="type" v-model="form.type" required>
                                 <option value="витрата">Витрата</option>
                                 <option value="дохід">Дохід</option>
                             </select>
@@ -57,29 +59,76 @@
 
                         <div class="form-field">
                             <label for="amount">Сума, грн</label>
-                            <input type="number" id="amount" name="amount" min="0.01" step="0.01" required>
-                            <p class="form-error" id="amount-error" role="alert"></p>
+                            <input type="number" id="amount" v-model="form.amount" min="0.01" step="0.01" required>
+                            <p class="form-error">{{ amountError }}</p>
                         </div>
 
                         <div class="form-field">
                             <label for="category">Категорія</label>
-                            <input type="text" id="category" name="category" maxlength="20" required>
+                            <input type="text" id="category" v-model="form.category" maxlength="20" required>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn" id="submit-btn">Додати витрату</button>
+                    <button type="submit" class="btn">{{ buttonText }}</button>
                 </form>
             </section>
 
             <section id="operations" class="section">
-                <h2>Операції</h2>
-                <ul class="operations-list" id="transactions-list">
-                    <li class="operation static-example">-150 грн (витрата)</li>
-                    <li class="operation static-example">-30 грн (витрата)</li>
-                    <li class="operation static-example">+2000 грн (дохід)</li>
+                <h2>Операції ({{ operations.length }})</h2>
+                <ul class="operations-list">
+                    <expense-row
+                        v-for="op in operations"
+                        :key="op.id"
+                        :id="op.id"
+                        :amount="op.amount"
+                        :type="op.type"
+                        :category="op.category"
+                        @remove="removeOperation"
+                    ></expense-row>
                 </ul>
+                <p v-if="operations.length === 0" class="section-hint">Операцій ще немає.</p>
             </section>
         </main>
+    </div>
+
+    <!-- Поза Vue-застосунком: секції з практикуму 9 на чистому JS -->
+    <div class="container">
+        <section id="api-operations" class="section">
+            <h2>Приклади операцій із сервера</h2>
+            <p class="section-hint">Дані завантажуються з відкритого API JSONPlaceholder.</p>
+            <button type="button" class="btn" id="reload-btn">Оновити</button>
+            <p class="api-status" id="api-status" role="status"></p>
+            <ul class="api-list" id="api-list"></ul>
+        </section>
+
+        <section id="converter" class="section">
+            <h2>Конвертер валют</h2>
+            <p class="section-hint">Курси надає відкритий API Frankfurter (дані Європейського центрального банку).</p>
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="conv-amount">Сума</label>
+                    <input type="number" id="conv-amount" min="0.01" step="0.01" value="100">
+                </div>
+                <div class="form-field">
+                    <label for="conv-from">З валюти</label>
+                    <select id="conv-from">
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="PLN">PLN</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="conv-to">У валюту</label>
+                    <select id="conv-to">
+                        <option value="EUR">EUR</option>
+                        <option value="USD">USD</option>
+                        <option value="PLN">PLN</option>
+                    </select>
+                </div>
+            </div>
+            <button type="button" class="btn" id="convert-btn">Конвертувати</button>
+            <p class="api-status" id="conv-result" role="status"></p>
+        </section>
     </div>
 
     <footer class="site-footer">
