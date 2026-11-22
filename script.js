@@ -7,6 +7,10 @@
  * спершу через localStorage (JSON.stringify/parse), далі - в IndexedDB
  * (сховище "transactions", keyPath "id", autoIncrement). Під час першого запуску
  * виконується одноразова міграція записів з localStorage в IndexedDB.
+ *
+ * Практикум 12. Кругова діаграма розподілу витрат за категоріями на Canvas:
+ * сектори малюються через ctx.arc() за даними агрегації byCategory, поява секторів
+ * анімується циклом requestAnimationFrame після кожної зміни даних.
  */
 
 // ---------- Практикум 11: модель даних і ключі сховищ ----------
@@ -178,6 +182,121 @@ async function migrateFromLocalStorage() {
     console.log(`Міграція з localStorage в IndexedDB: перенесено записів ${items.length}`);
 }
 
+// ---------- Практикум 12: кругова діаграма на Canvas ----------
+
+const PIE_SIZE = 300;            // логічний розмір полотна, як у атрибутах width/height
+const PIE_DURATION = 700;        // тривалість анімації появи секторів, мс
+const PIE_HOVER_SHIFT = 10;      // наскільки виділений сектор висувається назовні, px
+const PIE_COLORS = ['#ea580c', '#2563eb', '#7c3aed', '#0d9488', '#db2777', '#ca8a04', '#64748b'];
+
+// контекст не кладемо в реактивні дані Vue: проксі ламає виклики методів canvas
+let pieCtx = null;
+
+// плавне сповільнення в кінці анімації: t від 0 до 1
+function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+}
+
+// геометрія діаграми в логічних координатах полотна
+function pieGeometry() {
+    const radius = PIE_SIZE / 2 - PIE_HOVER_SHIFT - 4;
+    return { cx: PIE_SIZE / 2, cy: PIE_SIZE / 2, radius, inner: radius * 0.55 };
+}
+
+// малює один кадр: progress - яка частка кола вже «розгорнута» (0..1),
+// hoverIndex - номер виділеного сектора або -1
+function drawPie(ctx, slices, progress, hoverIndex) {
+    const { cx, cy, radius, inner } = pieGeometry();
+    const dpr = window.devicePixelRatio || 1;
+    const total = slices.reduce((sum, slice) => sum + slice.sum, 0);
+
+    // масштаб під щільність пікселів екрана, далі працюємо в логічних px
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // очищення обов'язкове: інакше новий кадр накладається на попередній
+    ctx.clearRect(0, 0, PIE_SIZE, PIE_SIZE);
+
+    if (total === 0) {
+        return;
+    }
+
+    let start = -Math.PI / 2; // перший сектор починається зверху, «о 12-й»
+
+    slices.forEach((slice, index) => {
+        const angle = (slice.sum / total) * Math.PI * 2 * progress;
+
+        // save/restore: зсув виділеного сектора не впливає на інші сектори
+        ctx.save();
+
+        if (index === hoverIndex) {
+            const middle = start + angle / 2;
+            ctx.translate(Math.cos(middle) * PIE_HOVER_SHIFT, Math.sin(middle) * PIE_HOVER_SHIFT);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, start, start + angle);
+        ctx.closePath();
+        ctx.fillStyle = slice.color;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        ctx.restore();
+        start += angle;
+    });
+
+    // отвір у центрі (кільцева діаграма) і підпис
+    ctx.beginPath();
+    ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    const active = slices[hoverIndex];
+    const title = active ? active.category : 'Усього витрат';
+    const value = active ? `${active.percent} %` : `${Math.round(total * progress)} грн`;
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#475467';
+    ctx.font = '600 14px Inter, "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, cx, cy - 14, inner * 1.8);
+    ctx.fillStyle = '#1f2933';
+    ctx.font = '800 24px Manrope, "Segoe UI", Arial, sans-serif';
+    ctx.fillText(value, cx, cy + 12, inner * 1.8);
+}
+
+// визначає, на який сектор вказує точка (x, y); -1 - повз діаграму
+function pieHitTest(slices, x, y) {
+    const { cx, cy, radius, inner } = pieGeometry();
+    const dx = x - cx;
+    const dy = y - cy;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance < inner || distance > radius + PIE_HOVER_SHIFT) {
+        return -1;
+    }
+
+    // кут від верхньої точки за годинниковою стрілкою, 0..2π
+    let angle = Math.atan2(dy, dx) + Math.PI / 2;
+    if (angle < 0) {
+        angle += Math.PI * 2;
+    }
+
+    const total = slices.reduce((sum, slice) => sum + slice.sum, 0);
+    let start = 0;
+
+    for (let i = 0; i < slices.length; i++) {
+        const end = start + (slices[i].sum / total) * Math.PI * 2;
+        if (angle >= start && angle < end) {
+            return i;
+        }
+        start = end;
+    }
+
+    return -1;
+}
+
 // ---------- Vue-застосунок ----------
 
 const { createApp } = Vue;
@@ -219,6 +338,9 @@ createApp({
             amountError: '',
             dbError: '',
             storageInfo: 'Завантаження даних…',
+            pieProgress: 0,   // 0..1 - поточна частка «розгорнутого» кола
+            pieHover: -1,     // номер виділеного сектора
+            pieFrame: null,   // id запиту requestAnimationFrame, щоб його можна було скасувати
         };
     },
 
@@ -267,9 +389,94 @@ createApp({
 
             return Object.values(totals).sort((a, b) => b.sum - a.sum);
         },
+        // дані для діаграми: колір і відсоток кожної категорії від усіх витрат
+        pieSlices() {
+            return this.byCategory.map((row, index) => ({
+                ...row,
+                color: PIE_COLORS[index % PIE_COLORS.length],
+                percent: this.expense === 0 ? 0 : Math.round(row.sum / this.expense * 100),
+            }));
+        },
+        // текстовий опис діаграми для екранних читачів
+        pieAriaLabel() {
+            const parts = this.pieSlices.map((slice) => `${slice.category} ${slice.percent} %`);
+            return 'Розподіл витрат за категоріями: ' + parts.join(', ');
+        },
+    },
+
+    watch: {
+        // будь-яка зміна агрегованих даних (додавання, видалення) запускає анімацію заново
+        pieSlices() {
+            this.pieHover = -1;
+            this.$nextTick(() => this.startPieAnimation());
+        },
     },
 
     methods: {
+        // ---------- Практикум 12: цикл анімації діаграми ----------
+
+        // запускає появу секторів від 0 до повного кола через requestAnimationFrame
+        startPieAnimation() {
+            this.stopPieAnimation();
+
+            let startTime = null;
+
+            const step = (time) => {
+                if (startTime === null) {
+                    startTime = time;
+                }
+
+                // 1) оновлюємо стан: частка часу анімації, що минула
+                const t = Math.min((time - startTime) / PIE_DURATION, 1);
+                this.pieProgress = easeOutCubic(t);
+
+                // 2) очищаємо й перемальовуємо кадр
+                this.renderPie();
+
+                // 3) просимо наступний кадр, доки анімація не завершилась
+                this.pieFrame = t < 1 ? requestAnimationFrame(step) : null;
+            };
+
+            this.pieFrame = requestAnimationFrame(step);
+        },
+
+        // скасовує запланований кадр, якщо анімація ще триває
+        stopPieAnimation() {
+            if (this.pieFrame !== null) {
+                cancelAnimationFrame(this.pieFrame);
+                this.pieFrame = null;
+            }
+        },
+
+        // малює поточний стан діаграми
+        renderPie() {
+            if (pieCtx) {
+                drawPie(pieCtx, this.pieSlices, this.pieProgress, this.pieHover);
+            }
+        },
+
+        // виділяє сектор; поза анімацією перемальовує один кадр
+        setPieHover(index) {
+            if (this.pieHover === index) {
+                return;
+            }
+
+            this.pieHover = index;
+
+            if (this.pieFrame === null) {
+                requestAnimationFrame(() => this.renderPie());
+            }
+        },
+
+        // переводить координати курсора в логічні координати полотна і шукає сектор
+        onPieMove(event) {
+            const rect = event.target.getBoundingClientRect();
+            const x = (event.clientX - rect.left) * PIE_SIZE / rect.width;
+            const y = (event.clientY - rect.top) * PIE_SIZE / rect.height;
+
+            this.setPieHover(pieHitTest(this.pieSlices, x, y));
+        },
+
         // читає всі записи з IndexedDB і дублює їх у localStorage як резервну копію
         async reloadOperations() {
             this.operations = await getAllItems();
@@ -321,8 +528,15 @@ createApp({
         },
     },
 
-    // після монтування: міграція і завантаження даних зі сховища
+    // після монтування: підготовка Canvas, міграція і завантаження даних зі сховища
     async mounted() {
+        // фізичний розмір полотна збільшуємо під щільність пікселів, щоб діаграма не була розмитою
+        const canvas = this.$refs.pie;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = PIE_SIZE * dpr;
+        canvas.height = PIE_SIZE * dpr;
+        pieCtx = canvas.getContext('2d');
+
         try {
             await migrateFromLocalStorage();
             await this.reloadOperations();
@@ -333,6 +547,10 @@ createApp({
             this.storageInfo = `Резервна копія: ${this.operations.length} записів у localStorage`;
             console.error('Помилка відкриття IndexedDB:', error);
         }
+    },
+    // коректне завершення: незавершений кадр анімації скасовується
+    beforeUnmount() {
+        this.stopPieAnimation();
     },
 }).mount('#app');
 
