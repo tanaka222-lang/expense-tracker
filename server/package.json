@@ -1,0 +1,12 @@
+{
+  "name": "expense-tracker-server",
+  "version": "1.0.0",
+  "description": "Найпростіший сервер трекера витрат: статичні файли і JSON API (практикум 14)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "Немировський Тимур, ІП-52",
+  "license": "ISC"
+}
