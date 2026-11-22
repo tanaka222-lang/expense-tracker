@@ -1,16 +1,190 @@
 /*
  * Практикум 10. Обрано Vue 3 і підключено через CDN: потрібен лише один тег script,
  * розмітка лишається звичайним HTML, без JSX і без Babel, тому сторінка працює
- * без збірки й Node.js. Ручний рендер списку з практикуму 7 (createElement,
- * append, querySelector) для цієї ділянки більше не потрібен - його замінив
- * компонент ExpenseRow, а баланс став обчислюваним значенням.
+ * без збірки й Node.js.
+ *
+ * Практикум 11. Дані застосунку зберігаються між перезавантаженнями сторінки:
+ * спершу через localStorage (JSON.stringify/parse), далі - в IndexedDB
+ * (сховище "transactions", keyPath "id", autoIncrement). Під час першого запуску
+ * виконується одноразова міграція записів з localStorage в IndexedDB.
  */
+
+// ---------- Практикум 11: модель даних і ключі сховищ ----------
+
+const DB_NAME = 'expense-tracker-db';
+const DB_VERSION = 1;
+const STORE_NAME = 'transactions';
+
+const LS_DATA_KEY = 'expense-tracker-operations';
+const LS_MIGRATED_KEY = 'expense-tracker-migrated';
+
+// початкові дані для першого запуску: id присвоює IndexedDB (autoIncrement)
+const DEFAULT_OPERATIONS = [
+    { amount: 2000, type: 'дохід', category: 'Стипендія', date: '2026-10-01' },
+    { amount: 150, type: 'витрата', category: 'Їжа', date: '2026-10-02' },
+    { amount: 30, type: 'витрата', category: 'Транспорт', date: '2026-10-02' },
+    { amount: 250, type: 'витрата', category: 'Розваги', date: '2026-10-03' },
+    { amount: 500, type: 'дохід', category: 'Підробіток', date: '2026-10-04' },
+    { amount: 90, type: 'витрата', category: 'Їжа', date: '2026-10-05' },
+];
+
+// ---------- Крок 2: збереження в localStorage ----------
+
+// записує масив операцій у localStorage рядком JSON
+function saveToLocalStorage(items) {
+    try {
+        localStorage.setItem(LS_DATA_KEY, JSON.stringify(items));
+    } catch (error) {
+        console.error('Не вдалося записати дані в localStorage:', error);
+    }
+}
+
+// читає масив операцій з localStorage; пошкоджений JSON не має ламати застосунок
+function loadFromLocalStorage() {
+    const raw = localStorage.getItem(LS_DATA_KEY);
+
+    if (!raw) {
+        return [];
+    }
+
+    try {
+        const data = JSON.parse(raw);
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        console.error('Пошкоджені дані в localStorage, список починається з порожнього:', error);
+        return [];
+    }
+}
+
+// ---------- Кроки 5-7: IndexedDB ----------
+
+// з'єднання з базою відкривається один раз і далі перевикористовується
+let dbPromise = null;
+
+// відкриває базу; object store створюється лише в onupgradeneeded
+function openDB() {
+    if (dbPromise) {
+        return dbPromise;
+    }
+
+    dbPromise = new Promise((resolve, reject) => {
+        if (!('indexedDB' in window)) {
+            reject(new Error('IndexedDB не підтримується цим браузером'));
+            return;
+        }
+
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                console.log(`Створено object store "${STORE_NAME}"`);
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => {
+            dbPromise = null; // наступний виклик спробує відкрити базу знову
+            reject(request.error);
+        };
+    });
+
+    return dbPromise;
+}
+
+// спільна функція запису: put() і створює новий запис, і оновлює наявний з тим самим id
+async function putItem(item) {
+    const db = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const request = transaction.objectStore(STORE_NAME).put(item);
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// додає новий запис без id: ключ присвоює autoIncrement, функція повертає новий id
+function addItem(item) {
+    const record = { ...item };
+    delete record.id;
+    return putItem(record);
+}
+
+// оновлює наявний запис: id обов'язковий, дубліката не створюється
+function updateItem(item) {
+    if (item.id === undefined) {
+        return Promise.reject(new Error('updateItem: у записі немає id'));
+    }
+    return putItem(item);
+}
+
+// повертає всі записи сховища
+async function getAllItems() {
+    const db = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const request = transaction.objectStore(STORE_NAME).getAll();
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// видаляє запис за ключем
+async function deleteItem(id) {
+    const db = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const request = transaction.objectStore(STORE_NAME).delete(id);
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// ---------- Крок 8: одноразова міграція localStorage -> IndexedDB ----------
+
+async function migrateFromLocalStorage() {
+    if (localStorage.getItem(LS_MIGRATED_KEY) === 'true') {
+        return;
+    }
+
+    const stored = await getAllItems();
+
+    if (stored.length > 0) {
+        localStorage.setItem(LS_MIGRATED_KEY, 'true');
+        return;
+    }
+
+    // перший запуск: якщо в localStorage порожньо, кладемо туди початкові дані
+    let items = loadFromLocalStorage();
+
+    if (items.length === 0) {
+        items = DEFAULT_OPERATIONS;
+        saveToLocalStorage(items);
+    }
+
+    for (const item of items) {
+        await addItem(item); // ключ присвоїть autoIncrement
+    }
+
+    localStorage.setItem(LS_MIGRATED_KEY, 'true');
+    console.log(`Міграція з localStorage в IndexedDB: перенесено записів ${items.length}`);
+}
+
+// ---------- Vue-застосунок ----------
 
 const { createApp } = Vue;
 
-// компонент одного рядка операції: отримує дані через props і не звертається до глобальних змінних
+// компонент одного рядка операції: отримує дані через props
 const ExpenseRow = {
-    props: ['id', 'amount', 'type', 'category'],
+    props: ['id', 'amount', 'type', 'category', 'date'],
     emits: ['remove'],
     computed: {
         isIncome() {
@@ -24,6 +198,7 @@ const ExpenseRow = {
         <li class="operation" :class="isIncome ? 'income' : 'expense'">
             <span>{{ sign }}{{ amount }} грн</span>
             <span class="operation__category">{{ category }}</span>
+            <span class="operation__date">{{ date }}</span>
             <button type="button" class="operation__remove" @click="$emit('remove', id)">Видалити</button>
         </li>
     `,
@@ -34,22 +209,20 @@ createApp({
 
     data() {
         return {
-            operations: [
-                { id: 1, amount: 2000, type: 'дохід', category: 'Стипендія' },
-                { id: 2, amount: 150, type: 'витрата', category: 'Їжа' },
-                { id: 3, amount: 30, type: 'витрата', category: 'Транспорт' },
-                { id: 4, amount: 250, type: 'витрата', category: 'Розваги' },
-                { id: 5, amount: 500, type: 'дохід', category: 'Підробіток' },
-                { id: 6, amount: 90, type: 'витрата', category: 'Їжа' },
-            ],
-            nextId: 7,
-            form: { type: 'витрата', amount: '', category: '' },
+            operations: [],
+            form: {
+                type: 'витрата',
+                amount: '',
+                category: '',
+                date: new Date().toISOString().slice(0, 10),
+            },
             amountError: '',
+            dbError: '',
+            storageInfo: 'Завантаження даних…',
         };
     },
 
     computed: {
-        // похідні значення: перераховуються самі, щойно зміниться масив операцій
         income() {
             return this.operations
                 .filter((op) => op.type === 'дохід')
@@ -75,11 +248,37 @@ createApp({
         buttonText() {
             return this.form.type === 'дохід' ? 'Додати дохід' : 'Додати витрату';
         },
+        // клієнтська агрегація: сума витрат за кожною категорією
+        byCategory() {
+            const totals = {};
+
+            for (const op of this.operations) {
+                if (op.type !== 'витрата') {
+                    continue;
+                }
+
+                if (!totals[op.category]) {
+                    totals[op.category] = { category: op.category, sum: 0, count: 0 };
+                }
+
+                totals[op.category].sum += op.amount;
+                totals[op.category].count += 1;
+            }
+
+            return Object.values(totals).sort((a, b) => b.sum - a.sum);
+        },
     },
 
     methods: {
-        // додає нову операцію в реактивний масив
-        addOperation() {
+        // читає всі записи з IndexedDB і дублює їх у localStorage як резервну копію
+        async reloadOperations() {
+            this.operations = await getAllItems();
+            saveToLocalStorage(this.operations);
+            this.storageInfo = `IndexedDB: ${this.operations.length} записів у сховищі "${STORE_NAME}"`;
+        },
+
+        // додає операцію: спочатку запис у сховище, потім перечитування списку
+        async addOperation() {
             const amount = Number(this.form.amount);
 
             if (amount <= 0) {
@@ -87,26 +286,53 @@ createApp({
                 return;
             }
 
-            this.operations.push({
-                id: this.nextId,
-                amount,
-                type: this.form.type,
-                category: this.form.category.trim(),
-            });
-
-            this.nextId += 1;
             this.amountError = '';
+
+            try {
+                const id = await addItem({
+                    amount,
+                    type: this.form.type,
+                    category: this.form.category.trim(),
+                    date: this.form.date,
+                });
+
+                await this.reloadOperations();
+                console.log('Збережено операцію в IndexedDB, id =', id, '– баланс:', this.balance);
+            } catch (error) {
+                this.dbError = 'Не вдалося зберегти операцію у сховище.';
+                console.error('Помилка запису в IndexedDB:', error);
+                return;
+            }
+
             this.form.amount = '';
             this.form.category = '';
-
-            console.log('Додано операцію, новий баланс:', this.balance);
         },
 
-        // подія від дочірнього компонента: видаляє операцію за id
-        removeOperation(id) {
-            this.operations = this.operations.filter((op) => op.id !== id);
-            console.log('Видалено операцію', id, '– баланс:', this.balance);
+        // подія від дочірнього компонента: видаляє запис зі сховища
+        async removeOperation(id) {
+            try {
+                await deleteItem(id);
+                await this.reloadOperations();
+                console.log('Видалено операцію', id, '– баланс:', this.balance);
+            } catch (error) {
+                this.dbError = 'Не вдалося видалити операцію зі сховища.';
+                console.error('Помилка видалення з IndexedDB:', error);
+            }
         },
+    },
+
+    // після монтування: міграція і завантаження даних зі сховища
+    async mounted() {
+        try {
+            await migrateFromLocalStorage();
+            await this.reloadOperations();
+        } catch (error) {
+            // IndexedDB може бути недоступна, наприклад у приватному режимі деяких браузерів
+            this.dbError = 'Сховище IndexedDB недоступне, показано резервну копію з localStorage.';
+            this.operations = loadFromLocalStorage();
+            this.storageInfo = `Резервна копія: ${this.operations.length} записів у localStorage`;
+            console.error('Помилка відкриття IndexedDB:', error);
+        }
     },
 }).mount('#app');
 

@@ -345,10 +345,6 @@ main {
 
 @media (min-width: 1024px) {
     .layout {
-        .container {
-        max-width: 1200px;
-        padding: 0 2rem 2rem;
-    }
         grid-template-columns: 3fr 1fr;
         gap: 2rem;
         align-items: start;
@@ -372,6 +368,11 @@ main {
     .balance__details {
         flex-direction: column;
         gap: 0.5rem;
+    }
+
+    .container {
+        max-width: 1200px;
+        padding: 0 2rem 2rem;
     }
 }
 .section-hint {
@@ -415,4 +416,49 @@ main {
     margin: 0;
     font-size: 0.875rem;
     color: #475467;
+}
+
+/* ---------- Практикум 11: сховище і підсумок за категоріями ---------- */
+
+.storage-note {
+    margin: 1rem 0 0;
+    font-size: 0.8125rem;
+    color: #475467;
+}
+
+.operation__date {
+    font-size: 0.875rem;
+    color: #475467;
+}
+
+.category-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.category-item:last-child {
+    border-bottom: none;
+}
+
+.category-item__name {
+    font-weight: 600;
+}
+
+.category-item__count {
+    margin-right: auto;
+    font-size: 0.875rem;
+    color: #475467;
+}
+
+.category-item__sum {
+    font-weight: 600;
 }
