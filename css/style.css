@@ -515,3 +515,77 @@ main {
         align-items: center;
     }
 }
+
+/* ---------- Практикум 13: SPA-сторінки ---------- */
+
+/* атрибут hidden має перемагати display: grid/flex з інших правил */
+[hidden] {
+    display: none !important;
+}
+
+.nav a[aria-current="page"] {
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: inset 0 -2px 0 #4ade80;
+}
+
+a.operation__category,
+a.category-item__name {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: #98a2b3;
+    text-underline-offset: 3px;
+}
+
+a.operation__category {
+    color: #475467;
+}
+
+a.operation__category:hover,
+a.category-item__name:hover {
+    text-decoration-color: currentColor;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #166534;
+    text-decoration: none;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2.5rem;
+    margin: 0 0 1rem;
+    padding: 1rem 1.25rem;
+    background-color: #f4f5f7;
+    border-radius: 8px;
+}
+
+.summary dt {
+    font-size: 0.875rem;
+    color: #475467;
+}
+
+.summary dd {
+    margin: 0;
+    font-family: "Manrope", "Segoe UI", Arial, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.not-found {
+    text-align: center;
+}
+
+.not-found .btn {
+    display: inline-block;
+    text-decoration: none;
+}

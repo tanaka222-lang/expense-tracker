@@ -15,15 +15,14 @@
 <body>
     <header class="site-header">
         <h1>Трекер витрат</h1>
-        <nav class="nav" aria-label="Розділи сторінки">
-            <a href="#balance-section">Баланс</a>
-            <a href="#add-operation">Додати</a>
-            <a href="#operations">Операції</a>
-            <a href="#categories">Категорії</a>
+        <!-- Практикум 13: посилання з data-link перехоплює клієнтський роутер -->
+        <nav class="nav" aria-label="Розділи застосунку">
+            <a href="#/" data-link>Операції</a>
+            <a href="#/stats" data-link>Статистика</a>
         </nav>
     </header>
 
-    <!-- Vue-застосунок: баланс, форма, список операцій і підсумок за категоріями -->
+    <!-- Vue-застосунок: баланс завжди видно, а вміст <main> змінюється залежно від маршруту -->
     <div class="layout" id="app">
         <aside id="balance-section" class="balance">
             <h2>Баланс</h2>
@@ -46,61 +45,107 @@
             <p class="storage-note">{{ storageInfo }}</p>
         </aside>
 
-        <main>
-            <section id="add-operation" class="section">
-                <h2>Додати операцію</h2>
-                <p v-if="dbError" class="api-status api-status--error">{{ dbError }}</p>
-                <form class="form" @submit.prevent="addOperation">
-                    <div class="form-row">
-                        <div class="form-field">
-                            <label for="type">Тип</label>
-                            <select id="type" v-model="form.type" required>
-                                <option value="витрата">Витрата</option>
-                                <option value="дохід">Дохід</option>
-                            </select>
+        <!-- Практикум 13: спільний контейнер, у який рендеряться всі «сторінки» застосунку -->
+        <main id="page">
+            <!-- маршрут «/»: останні операції та форма додавання -->
+            <template v-if="page === 'home'">
+                <section class="section">
+                    <h2>Додати операцію</h2>
+                    <p v-if="dbError" class="api-status api-status--error">{{ dbError }}</p>
+                    <form class="form" @submit.prevent="addOperation">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="type">Тип</label>
+                                <select id="type" v-model="form.type" required>
+                                    <option value="витрата">Витрата</option>
+                                    <option value="дохід">Дохід</option>
+                                </select>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="amount">Сума, грн</label>
+                                <input type="number" id="amount" v-model="form.amount" min="0.01" step="0.01" required>
+                                <p class="form-error">{{ amountError }}</p>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="category">Категорія</label>
+                                <input type="text" id="category" v-model="form.category" maxlength="20" required>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="date">Дата</label>
+                                <input type="date" id="date" v-model="form.date" required>
+                            </div>
                         </div>
 
-                        <div class="form-field">
-                            <label for="amount">Сума, грн</label>
-                            <input type="number" id="amount" v-model="form.amount" min="0.01" step="0.01" required>
-                            <p class="form-error">{{ amountError }}</p>
-                        </div>
+                        <button type="submit" class="btn">{{ buttonText }}</button>
+                    </form>
+                </section>
 
-                        <div class="form-field">
-                            <label for="category">Категорія</label>
-                            <input type="text" id="category" v-model="form.category" maxlength="20" required>
-                        </div>
+                <section class="section">
+                    <h2>Останні операції</h2>
+                    <p class="section-hint">Показано {{ recentOperations.length }} з {{ operations.length }}, нові зверху. Натисніть на категорію витрати, щоб відкрити її сторінку.</p>
+                    <ul class="operations-list">
+                        <expense-row
+                            v-for="op in recentOperations"
+                            :key="op.id"
+                            :id="op.id"
+                            :amount="op.amount"
+                            :type="op.type"
+                            :category="op.category"
+                            :date="op.date"
+                            @remove="removeOperation"
+                        ></expense-row>
+                    </ul>
+                    <p v-if="isLoaded && operations.length === 0" class="section-hint">Операцій ще немає.</p>
+                </section>
+            </template>
 
-                        <div class="form-field">
-                            <label for="date">Дата</label>
-                            <input type="date" id="date" v-model="form.date" required>
-                        </div>
-                    </div>
+            <!-- маршрут «/category/:category»: витрати однієї категорії -->
+            <section v-else-if="page === 'category'" class="section">
+                <a href="#/stats" data-link class="back-link">← До статистики</a>
+                <h2>Категорія «{{ routeParams.category }}»</h2>
 
-                    <button type="submit" class="btn">{{ buttonText }}</button>
-                </form>
+                <p v-if="!isLoaded" class="section-hint">Завантаження…</p>
+                <template v-else-if="categoryOperations.length > 0">
+                    <dl class="summary">
+                        <div>
+                            <dt>Витрачено</dt>
+                            <dd class="amount amount--expense">-{{ categoryTotal }} грн</dd>
+                        </div>
+                        <div>
+                            <dt>Операцій</dt>
+                            <dd>{{ categoryOperations.length }}</dd>
+                        </div>
+                        <div>
+                            <dt>Частка витрат</dt>
+                            <dd>{{ categoryShare }} %</dd>
+                        </div>
+                    </dl>
+                    <ul class="operations-list">
+                        <expense-row
+                            v-for="op in categoryOperations"
+                            :key="op.id"
+                            :id="op.id"
+                            :amount="op.amount"
+                            :type="op.type"
+                            :category="op.category"
+                            :date="op.date"
+                            @remove="removeOperation"
+                        ></expense-row>
+                    </ul>
+                </template>
+                <p v-else class="section-hint">
+                    У категорії «{{ routeParams.category }}» витрат немає.
+                    <a href="#/" data-link>На головну</a>
+                </p>
             </section>
 
-            <section id="operations" class="section">
-                <h2>Операції ({{ operations.length }})</h2>
-                <ul class="operations-list">
-                    <expense-row
-                        v-for="op in operations"
-                        :key="op.id"
-                        :id="op.id"
-                        :amount="op.amount"
-                        :type="op.type"
-                        :category="op.category"
-                        :date="op.date"
-                        @remove="removeOperation"
-                    ></expense-row>
-                </ul>
-                <p v-if="operations.length === 0" class="section-hint">Операцій ще немає.</p>
-            </section>
-
-            <section id="categories" class="section">
+            <!-- маршрут «/stats»: агрегація витрат за категоріями з діаграмою (практикуми 11-12) -->
+            <section v-else-if="page === 'stats'" class="section">
                 <h2>Витрати за категоріями</h2>
-                <p class="section-hint">Агрегація на клієнті з масиву, отриманого через getAllItems(). Наведіть курсор на сектор чи рядок, щоб виділити категорію.</p>
+                <p class="section-hint">Агрегація на клієнті з масиву, отриманого через getAllItems(). Наведіть курсор на сектор чи рядок, щоб виділити категорію; натисніть на назву, щоб відкрити її сторінку.</p>
 
                 <!-- Практикум 12: кругова діаграма на Canvas, сектори малюються через ctx.arc() -->
                 <div class="chart" v-show="byCategory.length > 0">
@@ -128,19 +173,26 @@
                             @mouseleave="setPieHover(-1)"
                         >
                             <span class="category-item__swatch" :style="{ backgroundColor: slice.color }"></span>
-                            <span class="category-item__name">{{ slice.category }}</span>
+                            <a class="category-item__name" :href="categoryLink(slice.category)" data-link>{{ slice.category }}</a>
                             <span class="category-item__count">{{ slice.count }} оп. · {{ slice.percent }} %</span>
                             <span class="category-item__sum amount amount--expense">-{{ slice.sum }} грн</span>
                         </li>
                     </ul>
                 </div>
-                <p v-if="byCategory.length === 0" class="section-hint">Витрат ще немає.</p>
+                <p v-if="isLoaded && byCategory.length === 0" class="section-hint">Витрат ще немає.</p>
+            </section>
+
+            <!-- маршрут не знайдено -->
+            <section v-else-if="page === 'not-found'" class="section not-found">
+                <h2>Сторінку не знайдено</h2>
+                <p>Адреси «{{ currentPath }}» у застосунку немає.</p>
+                <a href="#/" data-link class="btn">На головну</a>
             </section>
         </main>
     </div>
 
-    <!-- Поза Vue-застосунком: секції з практикуму 9 на чистому JS -->
-    <div class="container">
+    <!-- Поза Vue-застосунком: секції з практикуму 9 на чистому JS (показуються лише на маршруті «/») -->
+    <div class="container" id="home-extras">
         <section id="api-operations" class="section">
             <h2>Приклади операцій із сервера</h2>
             <p class="section-hint">Дані завантажуються з відкритого API JSONPlaceholder.</p>

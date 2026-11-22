@@ -11,6 +11,11 @@
  * Практикум 12. Кругова діаграма розподілу витрат за категоріями на Canvas:
  * сектори малюються через ctx.arc() за даними агрегації byCategory, поява секторів
  * анімується циклом requestAnimationFrame після кожної зміни даних.
+ *
+ * Практикум 13. Застосунок перетворено на SPA з hash-based маршрутизацією без фреймворку:
+ * «/» - останні операції та форма, «/category/:category» - витрати однієї категорії,
+ * «/stats» - агрегація за категоріями з діаграмою. Роутер (таблиця маршрутів, matchRoute,
+ * navigate, hashchange) написано вручну в кінці файлу, а Vue лише рендерить обрану сторінку.
  */
 
 // ---------- Практикум 11: модель даних і ключі сховищ ----------
@@ -297,6 +302,18 @@ function pieHitTest(slices, x, y) {
     return -1;
 }
 
+// ---------- Практикум 13: допоміжні функції маршрутів ----------
+
+// посилання на сторінку категорії; назва кодується, бо може містити кирилицю й пробіли
+function categoryLink(category) {
+    return '#/category/' + encodeURIComponent(category);
+}
+
+// поточний шлях маршруту - частина адреси після «#»; порожній хеш означає головну
+function getCurrentPath() {
+    return location.hash.slice(1) || '/';
+}
+
 // ---------- Vue-застосунок ----------
 
 const { createApp } = Vue;
@@ -312,18 +329,24 @@ const ExpenseRow = {
         sign() {
             return this.isIncome ? '+' : '-';
         },
+        // Практикум 13: категорія витрати веде на її сторінку
+        link() {
+            return categoryLink(this.category);
+        },
     },
     template: `
         <li class="operation" :class="isIncome ? 'income' : 'expense'">
             <span>{{ sign }}{{ amount }} грн</span>
-            <span class="operation__category">{{ category }}</span>
+            <span v-if="isIncome" class="operation__category">{{ category }}</span>
+            <a v-else class="operation__category" :href="link" data-link>{{ category }}</a>
             <span class="operation__date">{{ date }}</span>
             <button type="button" class="operation__remove" @click="$emit('remove', id)">Видалити</button>
         </li>
     `,
 };
 
-createApp({
+// vm - корінь застосунку; через нього view-функції роутера перемикають сторінки
+const vm = createApp({
     components: { ExpenseRow },
 
     data() {
@@ -341,6 +364,10 @@ createApp({
             pieProgress: 0,   // 0..1 - поточна частка «розгорнутого» кола
             pieHover: -1,     // номер виділеного сектора
             pieFrame: null,   // id запиту requestAnimationFrame, щоб його можна було скасувати
+            isLoaded: false,  // чи прочитано дані зі сховища
+            page: '',         // поточна сторінка: home / category / stats / not-found
+            routeParams: {},  // параметри маршруту, наприклад { category: 'Їжа' }
+            currentPath: '/', // шлях, для якого показано сторінку
         };
     },
 
@@ -389,6 +416,27 @@ createApp({
 
             return Object.values(totals).sort((a, b) => b.sum - a.sum);
         },
+        // ---------- Практикум 13: дані для сторінок ----------
+
+        // «/»: останні 10 операцій, нові зверху
+        recentOperations() {
+            return [...this.operations]
+                .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+                .slice(0, 10);
+        },
+        // «/category/:category»: витрати лише обраної категорії
+        categoryOperations() {
+            return this.operations.filter(
+                (op) => op.type === 'витрата' && op.category === this.routeParams.category,
+            );
+        },
+        categoryTotal() {
+            return this.categoryOperations.reduce((sum, op) => sum + op.amount, 0);
+        },
+        categoryShare() {
+            return this.expense === 0 ? 0 : Math.round(this.categoryTotal / this.expense * 100);
+        },
+
         // дані для діаграми: колір і відсоток кожної категорії від усіх витрат
         pieSlices() {
             return this.byCategory.map((row, index) => ({
@@ -405,15 +453,60 @@ createApp({
     },
 
     watch: {
-        // будь-яка зміна агрегованих даних (додавання, видалення) запускає анімацію заново
+        // будь-яка зміна агрегованих даних (додавання, видалення) запускає анімацію заново,
+        // якщо діаграма зараз на екрані
         pieSlices() {
             this.pieHover = -1;
-            this.$nextTick(() => this.startPieAnimation());
+            if (this.page === 'stats') {
+                this.$nextTick(() => this.startPieAnimation());
+            }
+        },
+        // Практикум 13: діаграма існує лише на сторінці «/stats»
+        page(newPage, oldPage) {
+            if (oldPage === 'stats') {
+                // вихід з екрана: скасовуємо кадр анімації й відпускаємо контекст
+                this.stopPieAnimation();
+                this.pieHover = -1;
+                pieCtx = null;
+            }
+            if (newPage === 'stats') {
+                // canvas з'являється в DOM лише після рендеру, тому чекаємо $nextTick
+                this.$nextTick(() => {
+                    this.initPie();
+                    this.startPieAnimation();
+                });
+            }
         },
     },
 
     methods: {
+        // ---------- Практикум 13: перемикання сторінок ----------
+
+        // викликається view-функціями роутера: Vue замінює вміст <main> на потрібну сторінку
+        showPage(name, params = {}) {
+            this.page = name;
+            this.routeParams = params;
+            this.currentPath = getCurrentPath();
+        },
+
+        categoryLink,
+
         // ---------- Практикум 12: цикл анімації діаграми ----------
+
+        // готує новий canvas: фізичний розмір під щільність пікселів, щоб діаграма не була розмитою
+        initPie() {
+            const canvas = this.$refs.pie;
+
+            if (!canvas) {
+                pieCtx = null;
+                return;
+            }
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = PIE_SIZE * dpr;
+            canvas.height = PIE_SIZE * dpr;
+            pieCtx = canvas.getContext('2d');
+        },
 
         // запускає появу секторів від 0 до повного кола через requestAnimationFrame
         startPieAnimation() {
@@ -528,15 +621,8 @@ createApp({
         },
     },
 
-    // після монтування: підготовка Canvas, міграція і завантаження даних зі сховища
+    // після монтування: міграція і завантаження даних зі сховища
     async mounted() {
-        // фізичний розмір полотна збільшуємо під щільність пікселів, щоб діаграма не була розмитою
-        const canvas = this.$refs.pie;
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = PIE_SIZE * dpr;
-        canvas.height = PIE_SIZE * dpr;
-        pieCtx = canvas.getContext('2d');
-
         try {
             await migrateFromLocalStorage();
             await this.reloadOperations();
@@ -547,6 +633,8 @@ createApp({
             this.storageInfo = `Резервна копія: ${this.operations.length} записів у localStorage`;
             console.error('Помилка відкриття IndexedDB:', error);
         }
+
+        this.isLoaded = true;
     },
     // коректне завершення: незавершений кадр анімації скасовується
     beforeUnmount() {
@@ -659,3 +747,143 @@ reloadButton.addEventListener('click', loadApiOperations);
 convertButton.addEventListener('click', convertAmount);
 
 loadApiOperations();
+
+// ---------- Практикум 13: клієнтська маршрутизація (hash-based) ----------
+
+const homeExtras = document.querySelector('#home-extras');
+
+/*
+ * Таблиця маршрутів: патерн шляху -> view-функція.
+ * Сегмент із двокрапкою (:category) - параметр, його значення потрапляє в params.
+ * Шлях зберігається після «#», тому сервер його не бачить і F5 на будь-якому маршруті працює.
+ */
+const routes = [
+    { path: '/', view: viewHome },
+    { path: '/category/:category', view: viewCategory },
+    { path: '/stats', view: viewStats },
+];
+
+// зіставляє шлях з патернами по сегментах; повертає { route, params } або null
+function matchRoute(path) {
+    const pathParts = path.split('/').filter(Boolean);
+
+    for (const route of routes) {
+        const routeParts = route.path.split('/').filter(Boolean);
+
+        if (routeParts.length !== pathParts.length) {
+            continue;
+        }
+
+        const params = {};
+        const matched = routeParts.every((part, index) => {
+            if (part.startsWith(':')) {
+                params[part.slice(1)] = decodeURIComponent(pathParts[index]);
+                return true;
+            }
+            return part === pathParts[index];
+        });
+
+        if (matched) {
+            return { route, params };
+        }
+    }
+
+    return null;
+}
+
+// ---------- view-функції: кожна показує свою сторінку в контейнері <main id="page"> ----------
+
+// «/» - останні операції, форма і секції практикуму 9
+function viewHome() {
+    vm.showPage('home');
+    homeExtras.hidden = false;
+    document.title = 'Операції · Трекер витрат';
+}
+
+// «/category/:category» - витрати однієї категорії з того ж масиву з IndexedDB
+function viewCategory(params) {
+    vm.showPage('category', params);
+    homeExtras.hidden = true;
+    document.title = `${params.category} · Трекер витрат`;
+}
+
+// «/stats» - агрегація за категоріями і діаграма
+function viewStats() {
+    vm.showPage('stats');
+    homeExtras.hidden = true;
+    document.title = 'Статистика · Трекер витрат';
+}
+
+// маршрут не знайдено - сторінка з посиланням на головну замість порожнього екрана
+function viewNotFound() {
+    vm.showPage('not-found');
+    homeExtras.hidden = true;
+    document.title = 'Не знайдено · Трекер витрат';
+}
+
+// позначає активний пункт меню
+function updateActiveLinks(path) {
+    const section = '/' + (path.split('/')[1] || '');
+
+    document.querySelectorAll('.nav a[data-link]').forEach((link) => {
+        const linkPath = link.getAttribute('href').slice(1);
+        const active = linkPath === section || (section === '/category' && linkPath === '/stats');
+
+        if (active) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
+    });
+}
+
+// знаходить маршрут для поточного шляху і викликає його view-функцію
+function renderRoute() {
+    const path = getCurrentPath();
+    let match = null;
+
+    try {
+        match = matchRoute(path);
+    } catch (error) {
+        // decodeURIComponent кидає виняток на пошкодженому %-кодуванні - вважаємо, що маршруту немає
+        console.warn('Некоректний шлях:', path, error);
+    }
+
+    if (match) {
+        match.route.view(match.params);
+    } else {
+        viewNotFound();
+    }
+
+    updateActiveLinks(path);
+    window.scrollTo(0, 0);
+    console.log('Маршрут:', path, match ? match.params : '(не знайдено)');
+}
+
+// клієнтська навігація: змінює хеш, а рендер виконає обробник hashchange
+function navigate(path) {
+    if (getCurrentPath() === path) {
+        renderRoute();
+        return;
+    }
+    location.hash = path;
+}
+
+// перехоплення кліків по внутрішніх посиланнях з data-link (делегування на document,
+// тож працює і для посилань, які Vue створює пізніше)
+document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[data-link]');
+
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return; // Ctrl/Cmd/Shift+клік - відкриття в новій вкладці лишаємо браузеру
+    }
+
+    event.preventDefault();
+    navigate(link.getAttribute('href').slice(1));
+});
+
+// кнопки «назад»/«вперед» і ручна зміна адреси змінюють хеш - перемальовуємо сторінку
+window.addEventListener('hashchange', renderRoute);
+
+// перший рендер для адреси, з якою відкрили сторінку
+renderRoute();
