@@ -306,6 +306,40 @@ main {
         flex: 1;
     }
 }
+.container {
+    display: grid;
+    gap: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1rem 2rem;
+}
+
+.operation {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.operation__category {
+    margin-right: auto;
+    font-weight: 400;
+    color: #475467;
+}
+
+.operation__remove {
+    padding: 0.25rem 0.625rem;
+    font: inherit;
+    color: #b42318;
+    background-color: #ffffff;
+    border: 1px solid #b42318;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.operation__remove:hover {
+    color: #ffffff;
+    background-color: #b42318;
+}
 
 /* ---------- Десктоп ---------- */
 
@@ -334,6 +368,11 @@ main {
     .balance__details {
         flex-direction: column;
         gap: 0.5rem;
+    }
+
+    .container {
+        max-width: 1200px;
+        padding: 0 2rem 2rem;
     }
 }
 .section-hint {
@@ -377,4 +416,49 @@ main {
     margin: 0;
     font-size: 0.875rem;
     color: #475467;
+}
+
+/* ---------- Практикум 11: сховище і підсумок за категоріями ---------- */
+
+.storage-note {
+    margin: 1rem 0 0;
+    font-size: 0.8125rem;
+    color: #475467;
+}
+
+.operation__date {
+    font-size: 0.875rem;
+    color: #475467;
+}
+
+.category-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.category-item:last-child {
+    border-bottom: none;
+}
+
+.category-item__name {
+    font-weight: 600;
+}
+
+.category-item__count {
+    margin-right: auto;
+    font-size: 0.875rem;
+    color: #475467;
+}
+
+.category-item__sum {
+    font-weight: 600;
 }
