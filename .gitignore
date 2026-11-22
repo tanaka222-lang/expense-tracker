@@ -6,3 +6,7 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Залежності Node.js (практикум 14)
+node_modules/
+npm-debug.log*

@@ -16,6 +16,10 @@
  * «/» - останні операції та форма, «/category/:category» - витрати однієї категорії,
  * «/stats» - агрегація за категоріями з діаграмою. Роутер (таблиця маршрутів, matchRoute,
  * navigate, hashchange) написано вручну в кінці файлу, а Vue лише рендерить обрану сторінку.
+ *
+ * Практикум 14. Секція «Транзакції з локального сервера» отримує дані з власного Node.js-сервера
+ * (server/server.js): GET /api/transactions і GET /api/transactions?category=... замість
+ * JSONPlaceholder. Патерн запиту той самий: async/await + response.ok + try/catch.
  */
 
 // ---------- Практикум 11: модель даних і ключі сховищ ----------
@@ -644,7 +648,8 @@ const vm = createApp({
 
 // ---------- Практикум 9: дані з зовнішнього API (поза Vue-застосунком) ----------
 
-const API_URL = 'https://jsonplaceholder.typicode.com/comments?postId=2';
+// Практикум 14: відносна адреса - запит іде на той самий сервер, що віддав сторінку (localhost:3000)
+const API_URL = '/api/transactions';
 const RATES_URL = 'https://api.frankfurter.dev/v1/latest';
 
 const apiList = document.querySelector('#api-list');
@@ -652,8 +657,9 @@ const apiStatus = document.querySelector('#api-status');
 const reloadButton = document.querySelector('#reload-btn');
 const convertButton = document.querySelector('#convert-btn');
 const convResult = document.querySelector('#conv-result');
+const apiCategory = document.querySelector('#api-category');
 
-// малює записи, отримані з API
+// малює транзакції, отримані з локального сервера
 function renderApiOperations(items) {
     apiList.innerHTML = '';
 
@@ -661,40 +667,65 @@ function renderApiOperations(items) {
         const li = document.createElement('li');
         const title = document.createElement('h3');
         const text = document.createElement('p');
+        const isIncome = item.type === 'дохід';
 
-        title.textContent = item.name;
-        text.textContent = item.body;
+        title.textContent = `${isIncome ? '+' : '-'}${item.amount} грн · ${item.category}`;
+        text.textContent = `${item.date} · ${item.type}`;
 
-        li.classList.add('api-item');
+        li.classList.add('api-item', isIncome ? 'api-item--income' : 'api-item--expense');
         li.setAttribute('data-id', item.id);
         li.append(title, text);
         apiList.append(li);
     }
 }
 
-// завантажує приклади операцій з API з перевіркою статусу й обробкою помилок
+// заповнює список категорій для фільтра з повного набору транзакцій
+function fillCategoryOptions(items) {
+    const selected = apiCategory.value;
+    const categories = [...new Set(items.map((item) => item.category))].sort((a, b) => a.localeCompare(b, 'uk'));
+
+    apiCategory.length = 1; // лишаємо тільки «Усі категорії»
+
+    for (const category of categories) {
+        apiCategory.add(new Option(category, category));
+    }
+
+    apiCategory.value = categories.includes(selected) ? selected : '';
+}
+
+// завантажує транзакції з локального сервера; категорія передається query-параметром,
+// а фільтрує вже сервер. Перевірка статусу й обробка помилок - як у практикумі 9
 async function loadApiOperations() {
+    const category = apiCategory.value;
+    const url = category ? `${API_URL}?${new URLSearchParams({ category })}` : API_URL;
+
     apiStatus.classList.remove('api-status--error');
     apiStatus.textContent = 'Завантаження…';
     reloadButton.disabled = true;
 
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch(url);
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
-        console.log('Отримано з API:', data);
+        console.log(`Отримано з ${url}:`, data);
 
-        renderApiOperations(data.slice(0, 5));
-        apiStatus.textContent = `Завантажено записів: ${data.length}, показано перші 5`;
+        if (!category) {
+            fillCategoryOptions(data);
+        }
+
+        renderApiOperations(data);
+        apiStatus.textContent = category
+            ? `Категорія «${category}»: записів ${data.length} (відфільтровано на сервері)`
+            : `Завантажено записів: ${data.length}`;
     } catch (error) {
         apiList.innerHTML = '';
-        apiStatus.textContent = 'Не вдалося завантажити дані. Перевірте з\'єднання та натисніть «Оновити».';
+        apiStatus.textContent = 'Не вдалося завантажити дані з локального сервера. Переконайтеся, що його запущено (npm start у теці server) і сторінку відкрито з http://localhost:3000.';
         apiStatus.classList.add('api-status--error');
-        console.error('Помилка запиту до API:', error);
+        console.error('Помилка запиту до локального сервера:', error);
     } finally {
         reloadButton.disabled = false;
     }
@@ -744,6 +775,7 @@ async function convertAmount() {
 }
 
 reloadButton.addEventListener('click', loadApiOperations);
+apiCategory.addEventListener('change', loadApiOperations);
 convertButton.addEventListener('click', convertAmount);
 
 loadApiOperations();
