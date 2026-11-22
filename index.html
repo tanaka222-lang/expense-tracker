@@ -193,10 +193,19 @@
 
     <!-- Поза Vue-застосунком: секції з практикуму 9 на чистому JS (показуються лише на маршруті «/») -->
     <div class="container" id="home-extras">
+        <!-- Практикум 14: дані з власного Node.js-сервера замість JSONPlaceholder -->
         <section id="api-operations" class="section">
-            <h2>Приклади операцій із сервера</h2>
-            <p class="section-hint">Дані завантажуються з відкритого API JSONPlaceholder.</p>
-            <button type="button" class="btn" id="reload-btn">Оновити</button>
+            <h2>Транзакції з локального сервера</h2>
+            <p class="section-hint">Дані завантажуються з власного Node.js-сервера: GET /api/transactions, фільтр за категорією виконується на сервері.</p>
+            <div class="api-controls">
+                <div class="form-field">
+                    <label for="api-category">Категорія</label>
+                    <select id="api-category">
+                        <option value="">Усі категорії</option>
+                    </select>
+                </div>
+                <button type="button" class="btn" id="reload-btn">Оновити</button>
+            </div>
             <p class="api-status" id="api-status" role="status"></p>
             <ul class="api-list" id="api-list"></ul>
         </section>

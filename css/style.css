@@ -589,3 +589,40 @@ a.category-item__name:hover {
     display: inline-block;
     text-decoration: none;
 }
+
+/* ---------- Практикум 14: транзакції з локального сервера ---------- */
+
+.api-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+}
+
+.api-controls select {
+    min-width: 12rem;
+    padding: 0.625rem 0.75rem;
+    font: inherit;
+    color: #1f2933;
+    background-color: #ffffff;
+    border: 1px solid #98a2b3;
+    border-radius: 8px;
+}
+
+.api-controls label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.api-item--income h3 {
+    color: #15803d;
+}
+
+.api-item--expense h3 {
+    color: #b42318;
+}
+
+
+.api-controls .btn {
+    align-self: auto;
+}
