@@ -33,9 +33,13 @@ const MIME_TYPES = {
     '.ico': 'image/x-icon',
 };
 
+// Практикум 15: заголовок для всіх відповідей - браузер не «вгадує» тип вмісту
+// і не виконає JSON чи текстову відповідь як HTML
+const SECURITY_HEADERS = { 'X-Content-Type-Options': 'nosniff' };
+
 // відповідь у форматі JSON з правильним заголовком і статус-кодом
 function sendJson(res, status, data) {
-    res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.writeHead(status, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(data));
 }
 
@@ -84,7 +88,7 @@ function serveStatic(req, res, url) {
     try {
         pathname = decodeURIComponent(url.pathname);
     } catch {
-        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.writeHead(400, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' });
         return res.end('400: некоректна адреса');
     }
 
@@ -94,22 +98,25 @@ function serveStatic(req, res, url) {
 
     const filePath = path.join(PUBLIC_DIR, pathname);
     const relative = path.relative(PUBLIC_DIR, filePath);
-    const topDir = relative.split(path.sep)[0];
+    const segments = relative.split(path.sep);
 
-    // захист: не виходимо за межі теки застосунку (../) і не віддаємо службові теки
-    if (relative.startsWith('..') || path.isAbsolute(relative) || HIDDEN_DIRS.includes(topDir)) {
-        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    // захист: не виходимо за межі теки застосунку (../), не віддаємо службові теки
+    // і приховані файли на кшталт .gitignore чи .env (практикум 15)
+    const hidden = HIDDEN_DIRS.includes(segments[0]) || segments.some((part) => part.startsWith('.'));
+
+    if (relative.startsWith('..') || path.isAbsolute(relative) || hidden) {
+        res.writeHead(404, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' });
         return res.end('404: файл не знайдено');
     }
 
     fs.readFile(filePath, (error, data) => {
         if (error) {
-            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.writeHead(404, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' });
             return res.end('404: файл не знайдено');
         }
 
         const type = MIME_TYPES[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
-        res.writeHead(200, { 'Content-Type': type });
+        res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': type });
         res.end(data);
     });
 }

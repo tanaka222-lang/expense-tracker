@@ -20,6 +20,9 @@
  * Практикум 14. Секція «Транзакції з локального сервера» отримує дані з власного Node.js-сервера
  * (server/server.js): GET /api/transactions і GET /api/transactions?category=... замість
  * JSONPlaceholder. Патерн запиту той самий: async/await + response.ok + try/catch.
+ *
+ * Практикум 15. Аудит безпеки (див. README.md): дані користувача й API ніколи не підставляються
+ * в innerHTML - лише через textContent, createElement чи інтерполяцію Vue {{ }}, яка екранує HTML.
  */
 
 // ---------- Практикум 11: модель даних і ключі сховищ ----------
@@ -318,6 +321,29 @@ function getCurrentPath() {
     return location.hash.slice(1) || '/';
 }
 
+// ---------- Практикум 15: повідомлення про додану операцію ----------
+
+const toast = document.querySelector('#toast');
+let toastTimer = null;
+
+// показує повідомлення на 4 секунди.
+// Безпека (практикум 15): раніше рядок збирався шаблоном і записувався в innerHTML, тож категорія
+// <img src=x onerror="alert('XSS')"> виконувалась як HTML. Тепер розмітку створює createElement,
+// а дані користувача потрапляють у DOM лише як текстові вузли - браузер не розбирає їх як HTML.
+function showToast(operation) {
+    const label = operation.type === 'дохід' ? 'Додано дохід' : 'Додано витрату';
+    const amount = document.createElement('strong');
+
+    amount.textContent = `${operation.amount} грн`;
+    toast.replaceChildren(`${label} `, amount, ` у категорію «${operation.category}»`);
+
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toast.hidden = true;
+    }, 4000);
+}
+
 // ---------- Vue-застосунок ----------
 
 const { createApp } = Vue;
@@ -592,15 +618,27 @@ const vm = createApp({
 
             this.amountError = '';
 
+            // категорія з одних пробілів після trim() стала б порожнім рядком
+            const category = this.form.category.trim();
+
+            if (category === '') {
+                this.dbError = 'Вкажіть назву категорії.';
+                return;
+            }
+
+            this.dbError = '';
+
             try {
-                const id = await addItem({
+                const operation = {
                     amount,
                     type: this.form.type,
-                    category: this.form.category.trim(),
+                    category,
                     date: this.form.date,
-                });
+                };
+                const id = await addItem(operation);
 
                 await this.reloadOperations();
+                showToast(operation);
                 console.log('Збережено операцію в IndexedDB, id =', id, '– баланс:', this.balance);
             } catch (error) {
                 this.dbError = 'Не вдалося зберегти операцію у сховище.';

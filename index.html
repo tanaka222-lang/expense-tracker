@@ -70,7 +70,7 @@
 
                             <div class="form-field">
                                 <label for="category">Категорія</label>
-                                <input type="text" id="category" v-model="form.category" maxlength="20" required>
+                                <input type="text" id="category" v-model="form.category" maxlength="40" required>
                             </div>
 
                             <div class="form-field">
@@ -239,6 +239,9 @@
             <p class="api-status" id="conv-result" role="status"></p>
         </section>
     </div>
+
+    <!-- Практикум 15: спливаюче повідомлення про додану операцію -->
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
     <footer class="site-footer">
         <p>© 2026 Немировський Тимур, ІП-52</p>

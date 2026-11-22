@@ -626,3 +626,21 @@ a.category-item__name:hover {
 .api-controls .btn {
     align-self: auto;
 }
+
+/* ---------- Практикум 15: спливаюче повідомлення ---------- */
+
+.toast {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 10;
+    max-width: 22rem;
+    padding: 0.875rem 1.25rem;
+    color: #ffffff;
+    background-color: #1f2933;
+    border-left: 4px solid #4ade80;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.2);
+    overflow-wrap: anywhere;
+}
+
